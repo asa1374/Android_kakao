@@ -1,10 +1,12 @@
 package com.example.contacts;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Layout;
@@ -18,6 +20,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import static com.example.contacts.Index.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,20 +46,43 @@ public class MemberList extends AppCompatActivity {
 
         memberList.setOnItemClickListener(
                 (AdapterView<?> p,View v,int i,long l)->{
-                    Index.Member m = (Index.Member)memberList.getItemAtPosition(i);
+                    Member m = (Member)memberList.getItemAtPosition(i);
                     Intent intent = new Intent(_this,MemberDetail.class);
                     intent.putExtra("seq",m.seq);
                     startActivity(intent);
                 });
-        //memberList.setOnItemLongClickListener(()->{});
-
+        memberList.setOnItemLongClickListener(
+                (AdapterView<?> p,View v,int i,long l)->{
+                    Member m = (Member)memberList.getItemAtPosition(i);
+                    new AlertDialog.Builder(_this).setTitle("DELETE")
+                            .setMessage("정말 삭제 하시겠습니까?")
+                            .setPositiveButton(
+                                    android.R.string.yes,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            //삭제쿼리 실행
+                                            startActivity(new Intent(_this,MemberList.class));
+                                        }
+                                    }
+                            ).setNegativeButton(
+                            android.R.string.no,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    //삭제 취소
+                                }
+                            }
+                    );
+                    return true;
+                });
     }
 
-    private class ListQuery extends Index.QueryFactory{
+    private class ListQuery extends QueryFactory{
         SQLiteOpenHelper helper;
         public ListQuery(Context _this) {
             super(_this);
-            helper = new Index.SQLiteHelper(_this);
+            helper = new SQLiteHelper(_this);
         }
         @Override
         public SQLiteDatabase getDatabase() {return helper.getReadableDatabase();}
@@ -65,22 +91,22 @@ public class MemberList extends AppCompatActivity {
 
         public List(Context _this) {super(_this);}
 
-        public ArrayList<Index.Member> get(){
-            ArrayList<Index.Member> list = new ArrayList<>();
+        public ArrayList<Member> get(){
+            ArrayList<Member> list = new ArrayList<>();
             Cursor c = this.getDatabase().rawQuery(
                     "SELECT * FROM MEMBER", null
             );
-            Index.Member m = null;
+            Member m = null;
             if(c != null){
                 while (((Cursor) c).moveToNext()) {
-                    m = new Index.Member();
-                    m.seq = Integer.parseInt(c.getString(c.getColumnIndex(Index.MSEQ)));
-                    m.name = c.getString(c.getColumnIndex(Index.MNAME));
-                    m.pw = c.getString(c.getColumnIndex(Index.MPW));
-                    m.email = c.getString(c.getColumnIndex(Index.MEMAIL));
-                    m.phone = c.getString(c.getColumnIndex(Index.MPHONE));
-                    m.addr = c.getString(c.getColumnIndex(Index.MADDR));
-                    m.photo = c.getString(c.getColumnIndex(Index.MPHOTO));
+                    m = new Member();
+                    m.seq = Integer.parseInt(c.getString(c.getColumnIndex(MSEQ)));
+                    m.name = c.getString(c.getColumnIndex(MNAME));
+                    m.pw = c.getString(c.getColumnIndex(MPW));
+                    m.email = c.getString(c.getColumnIndex(MEMAIL));
+                    m.phone = c.getString(c.getColumnIndex(MPHONE));
+                    m.addr = c.getString(c.getColumnIndex(MADDR));
+                    m.photo = c.getString(c.getColumnIndex(MPHOTO));
                     list.add(m);
                 }
             }else{
@@ -90,11 +116,11 @@ public class MemberList extends AppCompatActivity {
         };
     }
     private class MemberAdapter extends BaseAdapter{
-        ArrayList<Index.Member> list;
+        ArrayList<Member> list;
         LayoutInflater inflater;
         Context _this;
 
-        public MemberAdapter(Context _this,ArrayList<Index.Member> list) {
+        public MemberAdapter(Context _this,ArrayList<Member> list) {
             this._this = _this;
             this.list = list;
             this.inflater = LayoutInflater.from(_this);
@@ -159,11 +185,11 @@ public class MemberList extends AppCompatActivity {
         TextView name,phone;
     }
 
-    private  class ImgQuery extends Index.QueryFactory{
+    private  class ImgQuery extends QueryFactory{
         SQLiteOpenHelper helper;
         public ImgQuery(Context _this) {
             super(_this);
-            helper = new Index.SQLiteHelper(_this);
+            helper = new SQLiteHelper(_this);
         }
 
         @Override
@@ -180,12 +206,10 @@ public class MemberList extends AppCompatActivity {
             String res = "";
             Cursor c = this.getDatabase().rawQuery(
                     String.format("SELECT %s FROM %s" +
-                            " WHERE %s LIKE '%s'",Index.MPHOTO,Index.MEMBERS
-                                                ,Index.MSEQ,seq), null);
-            if(c != null ){
-                if ( c.moveToNext()) {
-                    res = c.getString(c.getColumnIndex(Index.MPHOTO));
-                }
+                            " WHERE %s LIKE '%s'",MPHOTO,MEMBERS
+                                                ,MSEQ,seq), null);
+            if(c != null && c.moveToNext()){
+                res = c.getString(c.getColumnIndex(MPHOTO));
             }else{
                 Toast.makeText(_this, "사진이 없다",Toast.LENGTH_LONG).show();
             }
